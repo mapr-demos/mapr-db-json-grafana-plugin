@@ -106,7 +106,10 @@ export class MapRDBJSONTableDatasource {
         target: this.templateSrv.replace(target.target, options.scopedVars, 'regex'),
         refId: target.refId,
         hide: target.hide,
-        type: target.type || 'Timeserie'
+        type: target.type || 'Raw Document',
+        table: target.table,
+        condition: target.condition,
+        limit: target.limit
       };
     });
 

@@ -1,5 +1,5 @@
 import {MapRDBJSONTableDatasource} from './datasource';
-import {GenericDatasourceQueryCtrl} from './query_ctrl';
+import {MapRDBJSONTableDatasourceQueryCtrl} from './query_ctrl';
 
 class GenericConfigCtrl {
 }
@@ -15,7 +15,7 @@ GenericAnnotationsQueryCtrl.templateUrl = 'partials/annotations.editor.html'
 
 export {
     MapRDBJSONTableDatasource as Datasource,
-    GenericDatasourceQueryCtrl as QueryCtrl,
+    MapRDBJSONTableDatasourceQueryCtrl as QueryCtrl,
     GenericConfigCtrl as ConfigCtrl,
     GenericQueryOptionsCtrl as QueryOptionsCtrl,
     GenericAnnotationsQueryCtrl as AnnotationsQueryCtrl
