@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * TODO doc
+ * Handles annotation requests and returns annotations, which will be displayed by Grafana dashboards.
  */
 @CrossOrigin
 @RestController
@@ -20,7 +20,7 @@ public class AnnotationsController {
 
     @PostMapping("/annotations")
     public static ResponseEntity annotations(@RequestBody JsonNode request) {
-        log.info("Annotations request: {}", request);
+        log.debug("Annotations request: {}", request);
         return ResponseEntity.notFound().build();
     }
 }

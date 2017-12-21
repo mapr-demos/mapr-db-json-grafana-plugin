@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * TODO doc
+ * Returns metric options, which will be displayed by Grafana query editor to get metric suggestions.
  */
 @CrossOrigin
 @RestController
@@ -20,7 +20,7 @@ public class SearchMetricOptionsController {
 
     @PostMapping("/search")
     public static ResponseEntity findMetrics(@RequestBody JsonNode request) {
-        log.info("Search metrics request: {}", request);
+        log.debug("Search metrics request: {}", request);
         return ResponseEntity.notFound().build();
     }
 }
