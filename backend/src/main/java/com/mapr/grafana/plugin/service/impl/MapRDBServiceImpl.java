@@ -1,17 +1,15 @@
 package com.mapr.grafana.plugin.service.impl;
 
 import com.mapr.db.exceptions.TableNotFoundException;
-import com.mapr.db.util.ConditionParser;
 import com.mapr.grafana.plugin.model.*;
 import com.mapr.grafana.plugin.service.MapRDBService;
+import com.mapr.grafana.plugin.util.MetricsQueryBuilder;
 import org.ojai.Document;
 import org.ojai.DocumentStream;
-import org.ojai.exceptions.DecodingException;
 import org.ojai.exceptions.OjaiException;
 import org.ojai.store.Connection;
 import org.ojai.store.DriverManager;
 import org.ojai.store.Query;
-import org.ojai.store.QueryCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -91,7 +89,7 @@ public class MapRDBServiceImpl implements MapRDBService {
                 .filter(target -> target.getTable() != null && !target.getTable().isEmpty())
                 .map(target -> {
                     if (GrafanaQueryTarget.RAW_DOCUMENT_TYPE.equals(target.getType())) {
-                        return queryRawDocuments(target);
+                        return queryRawDocuments(queryRequest, target);
                     } else if (GrafanaQueryTarget.TIME_SERIES_TYPE.equals(target.getType())) {
                         return queryTimeSeries(target);
                     } else {
@@ -103,12 +101,17 @@ public class MapRDBServiceImpl implements MapRDBService {
                 .collect(Collectors.toSet());
     }
 
-    private Optional<GrafanaRawDocuments> queryRawDocuments(GrafanaQueryTarget target) {
+    private Optional<GrafanaRawDocuments> queryRawDocuments(GrafanaQueryRequest queryRequest, GrafanaQueryTarget target) {
 
         log.debug("Querying raw documents for target: {}", target);
         try {
 
-            Query query = targetToOjaiQuery(connection, target);
+            Query query = MetricsQueryBuilder.forConnection(connection)
+                    .withJsonConditon(target.getCondition())
+                    .withTimeRange(target.getTimeField(), queryRequest.getRange())
+                    .withLimit(target.getLimit(), DEFAULT_RAW_DOCUMENT_LIMIT, MAX_RAW_DOCUMENT_LIMIT)
+                    .constructQuery();
+
             DocumentStream documentStream = connection.getStore(target.getTable()).findQuery(query.build());
 
             GrafanaRawDocuments<Document> rawDocumentsMetric = new GrafanaRawDocuments<>();
@@ -130,29 +133,6 @@ public class MapRDBServiceImpl implements MapRDBService {
         // TODO implement
         log.debug("Querying time series for target: {}", target);
         return Optional.empty();
-    }
-
-    private Query targetToOjaiQuery(Connection connection, GrafanaQueryTarget target) {
-
-        long limit = (target.getLimit() <= 0)
-                ? DEFAULT_RAW_DOCUMENT_LIMIT
-                : (target.getLimit() > MAX_RAW_DOCUMENT_LIMIT) ? MAX_RAW_DOCUMENT_LIMIT : target.getLimit();
-
-        if (target.getCondition() == null || target.getCondition().isEmpty()) {
-            return connection.newQuery().limit(limit);
-        }
-
-        try {
-            log.debug("Building OJAI query for target: {}", target);
-            QueryCondition condition = new ConditionParser().parseCondition(target.getCondition());
-            return connection.newQuery().where(condition).limit(limit);
-        } catch (DecodingException e) {
-            log.warn("Can not decode OJAI JSON condition from : '{}'", target.getCondition());
-        } catch (Exception e) {
-            log.warn("Exception occurred while building OJAI query for target: " + target, e);
-        }
-
-        return connection.newQuery().limit(limit);
     }
 
     @PreDestroy

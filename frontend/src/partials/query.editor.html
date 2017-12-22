@@ -15,14 +15,18 @@
 
     <div class="gf-form-inline">
         <div class="gf-form gf-form--grow">
-        <select class="gf-form-input" ng-model="ctrl.target.type"
-                ng-options="f as f for f in ['Raw Document', 'Timeseries']"></select>
-    </div>
-
+            <label class="gf-form-label query-keyword width-7">Type</label>
+            <select class="gf-form-input" ng-model="ctrl.target.type"
+                    ng-options="f as f for f in ['Raw Document', 'Timeseries']"></select>
+        </div>
         <div class="gf-form gf-form--grow">
-        <label class="gf-form-label width-10">Limit</label>
-        <input type="number" class="gf-form-input max-width-12" ng-model="ctrl.target.limit" ng-blur="onChange()"></input>
-    </div>
+            <label class="gf-form-label query-keyword width-7">Time field</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.timeField" ng-blur="onChange()">
+        </div>
+        <div class="gf-form gf-form--grow">
+            <label class="gf-form-label query-keyword width-7">Limit</label>
+            <input type="number" class="gf-form-input" ng-model="ctrl.target.limit" ng-blur="onChange()">
+        </div>
     </div>
 
 </query-editor-row>

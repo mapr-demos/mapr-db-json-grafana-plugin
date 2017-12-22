@@ -39,6 +39,8 @@ public class GrafanaQueryTarget {
 
     private long limit;
 
+    private String timeField;
+
     public String getRefId() {
         return refId;
     }
@@ -79,6 +81,14 @@ public class GrafanaQueryTarget {
         this.limit = limit;
     }
 
+    public String getTimeField() {
+        return timeField;
+    }
+
+    public void setTimeField(String timeField) {
+        this.timeField = timeField;
+    }
+
     @Override
     public String toString() {
         return "GrafanaQueryTarget{" +
@@ -87,6 +97,7 @@ public class GrafanaQueryTarget {
                 ", table='" + table + '\'' +
                 ", condition='" + condition + '\'' +
                 ", limit=" + limit +
+                ", timeField=" + timeField +
                 '}';
     }
 }

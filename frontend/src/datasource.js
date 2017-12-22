@@ -109,7 +109,8 @@ export class MapRDBJSONTableDatasource {
         type: target.type || 'Raw Document',
         table: target.table,
         condition: target.condition,
-        limit: target.limit
+        limit: target.limit,
+        timeField: target.timeField
       };
     });
 
