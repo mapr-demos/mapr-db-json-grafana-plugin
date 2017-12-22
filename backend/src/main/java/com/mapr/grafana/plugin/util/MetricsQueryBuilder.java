@@ -71,10 +71,19 @@ public final class MetricsQueryBuilder {
     }
 
     public MetricsQueryBuilder select(String... fieldPaths) {
+
+        if(fieldPaths == null) {
+            return this;
+        }
+
         return select(Arrays.asList(fieldPaths));
     }
 
     public MetricsQueryBuilder select(Collection<String> fieldPaths) {
+
+        if(fieldPaths == null) {
+            return this;
+        }
 
         if (this.selectFields == null) {
             this.selectFields = new HashSet<>();

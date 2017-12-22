@@ -110,7 +110,8 @@ export class MapRDBJSONTableDatasource {
         table: target.table,
         condition: target.condition,
         limit: target.limit,
-        timeField: target.timeField
+        timeField: target.timeField,
+        selectFields: (target.selectFields) ? target.selectFields.split(',').map(str => str.trim()) : []
       };
     });
 

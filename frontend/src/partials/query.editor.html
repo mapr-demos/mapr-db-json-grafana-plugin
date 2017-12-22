@@ -1,6 +1,11 @@
 <query-editor-row query-ctrl="ctrl" class="generic-datasource-query-row" has-text-edit-mode="true">
     <div class="gf-form-inline">
         <div class="gf-form gf-form--grow">
+            <label class="gf-form-label query-keyword width-7">Type</label>
+            <select class="gf-form-input" ng-model="ctrl.target.type"
+                    ng-options="f as f for f in ['Raw Document', 'Timeseries']"></select>
+        </div>
+        <div class="gf-form gf-form--grow">
             <label class="gf-form-label query-keyword width-7">Table</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.table" spellcheck="false"
                    placeholder="Table path" ng-change="ctrl.tableUpdated()" ng-blur="ctrl.refresh()">
@@ -15,9 +20,9 @@
 
     <div class="gf-form-inline">
         <div class="gf-form gf-form--grow">
-            <label class="gf-form-label query-keyword width-7">Type</label>
-            <select class="gf-form-input" ng-model="ctrl.target.type"
-                    ng-options="f as f for f in ['Raw Document', 'Timeseries']"></select>
+            <label class="gf-form-label query-keyword width-7">Select</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.selectFields" spellcheck="false"
+                   placeholder="Comma-separated list of fields" ng-blur="onChange()">
         </div>
         <div class="gf-form gf-form--grow">
             <label class="gf-form-label query-keyword width-7">Time field</label>
