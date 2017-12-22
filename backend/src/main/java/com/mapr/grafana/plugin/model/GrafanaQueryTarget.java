@@ -3,6 +3,7 @@ package com.mapr.grafana.plugin.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.validation.constraints.NotNull;
+import java.util.Set;
 
 /**
  * TODO
@@ -40,6 +41,8 @@ public class GrafanaQueryTarget {
     private long limit;
 
     private String timeField;
+
+    private Set<String> selectFields;
 
     public String getRefId() {
         return refId;
@@ -89,6 +92,14 @@ public class GrafanaQueryTarget {
         this.timeField = timeField;
     }
 
+    public Set<String> getSelectFields() {
+        return selectFields;
+    }
+
+    public void setSelectFields(Set<String> selectFields) {
+        this.selectFields = selectFields;
+    }
+
     @Override
     public String toString() {
         return "GrafanaQueryTarget{" +
@@ -97,7 +108,8 @@ public class GrafanaQueryTarget {
                 ", table='" + table + '\'' +
                 ", condition='" + condition + '\'' +
                 ", limit=" + limit +
-                ", timeField=" + timeField +
+                ", timeField='" + timeField + '\'' +
+                ", selectFields=" + selectFields +
                 '}';
     }
 }

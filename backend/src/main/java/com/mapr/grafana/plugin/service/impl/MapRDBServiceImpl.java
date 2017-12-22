@@ -107,6 +107,7 @@ public class MapRDBServiceImpl implements MapRDBService {
         try {
 
             Query query = MetricsQueryBuilder.forConnection(connection)
+                    .select(target.getSelectFields())
                     .withJsonConditon(target.getCondition())
                     .withTimeRange(target.getTimeField(), queryRequest.getRange())
                     .withLimit(target.getLimit(), DEFAULT_RAW_DOCUMENT_LIMIT, MAX_RAW_DOCUMENT_LIMIT)

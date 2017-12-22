@@ -12,8 +12,7 @@ import org.ojai.types.OTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-import java.util.Optional;
+import java.util.*;
 
 import static org.ojai.store.QueryCondition.Op.GREATER_OR_EQUAL;
 import static org.ojai.store.QueryCondition.Op.LESS_OR_EQUAL;
@@ -27,6 +26,7 @@ public final class MetricsQueryBuilder {
     private String timeField;
     private String jsonCondition;
     private GrafanaQueryRequest.Range range;
+    private Set<String> selectFields;
 
     private MetricsQueryBuilder(Connection connection) {
         this.connection = connection;
@@ -70,6 +70,20 @@ public final class MetricsQueryBuilder {
         return this;
     }
 
+    public MetricsQueryBuilder select(String... fieldPaths) {
+        return select(Arrays.asList(fieldPaths));
+    }
+
+    public MetricsQueryBuilder select(Collection<String> fieldPaths) {
+
+        if (this.selectFields == null) {
+            this.selectFields = new HashSet<>();
+        }
+        this.selectFields.addAll(fieldPaths);
+
+        return this;
+    }
+
     /**
      * Constructs and returns non-built {@link org.ojai.store.Query}.
      *
@@ -101,6 +115,10 @@ public final class MetricsQueryBuilder {
         Query query = (condition.isPresent())
                 ? this.connection.newQuery().where(condition.get())
                 : this.connection.newQuery();
+
+        if (this.selectFields != null && !this.selectFields.isEmpty()) {
+            query.select(this.selectFields.toArray(new String[this.selectFields.size()]));
+        }
 
         if (this.limit != null) {
             query.limit(this.limit);
