@@ -103,7 +103,7 @@ export class MapRDBJSONTableDatasource {
 
     var targets = _.map(options.targets, target => {
       return {
-        target: this.templateSrv.replace(target.target, options.scopedVars, 'regex'),
+        target: target.target,
         refId: target.refId,
         hide: target.hide,
         type: target.type || 'Raw Document',
@@ -111,7 +111,8 @@ export class MapRDBJSONTableDatasource {
         condition: target.condition,
         limit: target.limit,
         timeField: target.timeField,
-        selectFields: (target.selectFields) ? target.selectFields.split(',').map(str => str.trim()) : []
+        selectFields: (target.selectFields) ? target.selectFields.split(',').map(str => str.trim()) : [],
+        metricField: target.metricField
       };
     });
 
