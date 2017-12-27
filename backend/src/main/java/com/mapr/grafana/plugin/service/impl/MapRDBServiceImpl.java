@@ -10,6 +10,9 @@ import org.ojai.exceptions.OjaiException;
 import org.ojai.store.Connection;
 import org.ojai.store.DriverManager;
 import org.ojai.store.Query;
+import org.ojai.types.ODate;
+import org.ojai.types.OTime;
+import org.ojai.types.OTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -91,7 +94,7 @@ public class MapRDBServiceImpl implements MapRDBService {
                     if (GrafanaQueryTarget.RAW_DOCUMENT_TYPE.equals(target.getType())) {
                         return queryRawDocuments(queryRequest, target);
                     } else if (GrafanaQueryTarget.TIME_SERIES_TYPE.equals(target.getType())) {
-                        return queryTimeSeries(target);
+                        return queryTimeSeries(queryRequest, target);
                     } else {
                         return Optional.<GrafanaMetrics>empty();
                     }
@@ -130,9 +133,70 @@ public class MapRDBServiceImpl implements MapRDBService {
         return Optional.empty();
     }
 
-    private Optional<GrafanaMetrics> queryTimeSeries(GrafanaQueryTarget target) {
-        // TODO implement
+    private Optional<GrafanaMetrics> queryTimeSeries(GrafanaQueryRequest queryRequest, GrafanaQueryTarget target) {
+
         log.debug("Querying time series for target: {}", target);
+        if (target.getTarget() == null || target.getTarget().isEmpty() ||
+                target.getTimeField() == null || target.getTimeField().isEmpty() ||
+                target.getMetricField() == null || target.getMetricField().isEmpty()) {
+
+            log.warn("Target name, metric field and time field are required for querying time series. Invalid target: {}",
+                    target);
+
+            return Optional.empty();
+        }
+
+        Query query = MetricsQueryBuilder.forConnection(connection)
+                .select(target.getTimeField(), target.getMetricField())
+                .withJsonConditon(target.getCondition())
+                .withTimeRange(target.getTimeField(), queryRequest.getRange())
+                .withLimit(target.getLimit(), DEFAULT_RAW_DOCUMENT_LIMIT, MAX_RAW_DOCUMENT_LIMIT)
+                .orderBy(target.getTimeField())
+                .constructQuery();
+
+        DocumentStream documentStream = connection.getStore(target.getTable()).findQuery(query.build());
+
+        GrafanaTimeSeries timeSeries = new GrafanaTimeSeries(target.getTarget());
+        for (Document document : documentStream) {
+            documentToDatapoint(document, target.getMetricField(), target.getTimeField()).ifPresent(timeSeries::addDatapoint);
+        }
+
+        return Optional.of(timeSeries);
+    }
+
+    private Optional<GrafanaTimeSeries.Datapoint> documentToDatapoint(Document document, String metricField, String timeField) {
+
+        try {
+            double value = document.getValue(metricField).getDouble();
+            Object dateObject = document.getValue(timeField).getObject();
+
+            if (dateObject == null) {
+                throw new IllegalArgumentException("Time field can not contain null values.");
+            }
+
+            Long timestamp;
+            if (dateObject instanceof ODate) {
+                timestamp = ((ODate) dateObject).toDate().getTime();
+            } else if (dateObject instanceof OTime) {
+                timestamp = ((OTime) dateObject).toDate().getTime();
+            } else if (dateObject instanceof OTimestamp) {
+                timestamp = ((OTimestamp) dateObject).toDate().getTime();
+            } else if (dateObject instanceof String) { // TODO add support of time patterns
+                timestamp = Long.valueOf((String) dateObject);
+            } else {
+                timestamp = (Long) dateObject;
+            }
+
+            if (timestamp == null) {
+                throw new IllegalArgumentException("Can not parse '" + dateObject + "' object as timestamp value.");
+            }
+
+            return Optional.of(new GrafanaTimeSeries.Datapoint(value, timestamp));
+        } catch (Exception e) {
+            log.debug("Exception occurred while converting OJAI document '{}' to datapoint with metric field: '{}' " +
+                    "and time field: '{}'. Exception: '{}'", document, metricField, timeField, e);
+        }
+
         return Optional.empty();
     }
 

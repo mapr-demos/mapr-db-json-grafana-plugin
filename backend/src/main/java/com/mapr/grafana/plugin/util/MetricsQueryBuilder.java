@@ -27,6 +27,7 @@ public final class MetricsQueryBuilder {
     private String jsonCondition;
     private GrafanaQueryRequest.Range range;
     private Set<String> selectFields;
+    private Set<String> orderByFields;
 
     private MetricsQueryBuilder(Connection connection) {
         this.connection = connection;
@@ -72,7 +73,7 @@ public final class MetricsQueryBuilder {
 
     public MetricsQueryBuilder select(String... fieldPaths) {
 
-        if(fieldPaths == null) {
+        if (fieldPaths == null) {
             return this;
         }
 
@@ -81,7 +82,7 @@ public final class MetricsQueryBuilder {
 
     public MetricsQueryBuilder select(Collection<String> fieldPaths) {
 
-        if(fieldPaths == null) {
+        if (fieldPaths == null) {
             return this;
         }
 
@@ -89,6 +90,29 @@ public final class MetricsQueryBuilder {
             this.selectFields = new HashSet<>();
         }
         this.selectFields.addAll(fieldPaths);
+
+        return this;
+    }
+
+    public MetricsQueryBuilder orderBy(String... fieldPaths) {
+
+        if (fieldPaths == null) {
+            return this;
+        }
+
+        return orderBy(Arrays.asList(fieldPaths));
+    }
+
+    public MetricsQueryBuilder orderBy(Collection<String> fieldPaths) {
+
+        if (fieldPaths == null) {
+            return this;
+        }
+
+        if (this.orderByFields == null) {
+            this.orderByFields = new HashSet<>();
+        }
+        this.orderByFields.addAll(fieldPaths);
 
         return this;
     }
@@ -131,6 +155,10 @@ public final class MetricsQueryBuilder {
 
         if (this.limit != null) {
             query.limit(this.limit);
+        }
+
+        if (this.orderByFields != null) {
+            query.orderBy(this.orderByFields.toArray(new String[this.orderByFields.size()]));
         }
 
         return query;
@@ -219,6 +247,5 @@ public final class MetricsQueryBuilder {
     private QueryCondition dateCondition(Connection connection, String field, QueryCondition.Op op, Date date) {
         return connection.newCondition().is(field, op, new ODate(date.getTime()));
     }
-
 
 }

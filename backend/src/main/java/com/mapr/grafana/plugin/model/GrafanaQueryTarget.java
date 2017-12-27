@@ -44,6 +44,10 @@ public class GrafanaQueryTarget {
 
     private Set<String> selectFields;
 
+    private String target;
+
+    private String metricField;
+
     public String getRefId() {
         return refId;
     }
@@ -100,6 +104,22 @@ public class GrafanaQueryTarget {
         this.selectFields = selectFields;
     }
 
+    public String getTarget() {
+        return target;
+    }
+
+    public void setTarget(String target) {
+        this.target = target;
+    }
+
+    public String getMetricField() {
+        return metricField;
+    }
+
+    public void setMetricField(String metricField) {
+        this.metricField = metricField;
+    }
+
     @Override
     public String toString() {
         return "GrafanaQueryTarget{" +
@@ -110,6 +130,8 @@ public class GrafanaQueryTarget {
                 ", limit=" + limit +
                 ", timeField='" + timeField + '\'' +
                 ", selectFields=" + selectFields +
+                ", target='" + target + '\'' +
+                ", metricField='" + metricField + '\'' +
                 '}';
     }
 }
