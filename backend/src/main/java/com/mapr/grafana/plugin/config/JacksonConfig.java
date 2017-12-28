@@ -3,7 +3,7 @@ package com.mapr.grafana.plugin.config;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.mapr.grafana.plugin.model.GrafanaTimeSeries;
+import com.mapr.grafana.plugin.model.timeseries.AbstractGrafanaTimeSeries;
 import org.ojai.types.ODate;
 import org.ojai.types.OTime;
 import org.springframework.context.annotation.Bean;
@@ -42,13 +42,13 @@ public class JacksonConfig {
     }
 
     /**
-     * Custom serializer for instances of {@link GrafanaTimeSeries.Datapoint} class, which serializes datapoint to array
+     * Custom serializer for instances of {@link AbstractGrafanaTimeSeries.Datapoint} class, which serializes datapoint to array
      * with the following format: [datapoint value, datapoint timestamp]. Example: [134.5, 1450754220000].
      */
-    private class DatapointSerializer extends JsonSerializer<GrafanaTimeSeries.Datapoint> {
+    private class DatapointSerializer extends JsonSerializer<AbstractGrafanaTimeSeries.Datapoint> {
 
         @Override
-        public void serialize(GrafanaTimeSeries.Datapoint datapoint, JsonGenerator jsonGenerator,
+        public void serialize(AbstractGrafanaTimeSeries.Datapoint datapoint, JsonGenerator jsonGenerator,
                               SerializerProvider serializerProvider) throws IOException {
 
             if (datapoint == null) {
@@ -76,7 +76,7 @@ public class JacksonConfig {
         builder.serializerByType(OTime.class,
                 new OjaiDateSerializer<OTime>(oTimestamp -> oTimestamp == null ? null : oTimestamp.toDate().getTime()));
 
-        builder.serializerByType(GrafanaTimeSeries.Datapoint.class, new DatapointSerializer());
+        builder.serializerByType(AbstractGrafanaTimeSeries.Datapoint.class, new DatapointSerializer());
 
         return builder;
     }

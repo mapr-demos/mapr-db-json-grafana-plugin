@@ -48,6 +48,8 @@ public class GrafanaQueryTarget {
 
     private String metricField;
 
+    private String metric;
+
     public String getRefId() {
         return refId;
     }
@@ -120,6 +122,14 @@ public class GrafanaQueryTarget {
         this.metricField = metricField;
     }
 
+    public String getMetric() {
+        return metric;
+    }
+
+    public void setMetric(String metric) {
+        this.metric = metric;
+    }
+
     @Override
     public String toString() {
         return "GrafanaQueryTarget{" +
@@ -132,6 +142,7 @@ public class GrafanaQueryTarget {
                 ", selectFields=" + selectFields +
                 ", target='" + target + '\'' +
                 ", metricField='" + metricField + '\'' +
+                ", metric='" + metric + '\'' +
                 '}';
     }
 }

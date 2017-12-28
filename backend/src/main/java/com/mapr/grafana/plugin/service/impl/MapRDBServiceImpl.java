@@ -2,6 +2,10 @@ package com.mapr.grafana.plugin.service.impl;
 
 import com.mapr.db.exceptions.TableNotFoundException;
 import com.mapr.grafana.plugin.model.*;
+import com.mapr.grafana.plugin.model.timeseries.AggregationTimeSeries;
+import com.mapr.grafana.plugin.model.timeseries.DocumentCountTimeSeries;
+import com.mapr.grafana.plugin.model.timeseries.FieldAverageTimeSeries;
+import com.mapr.grafana.plugin.model.timeseries.GrafanaTimeSeries;
 import com.mapr.grafana.plugin.service.MapRDBService;
 import com.mapr.grafana.plugin.util.MetricsQueryBuilder;
 import org.ojai.Document;
@@ -10,9 +14,6 @@ import org.ojai.exceptions.OjaiException;
 import org.ojai.store.Connection;
 import org.ojai.store.DriverManager;
 import org.ojai.store.Query;
-import org.ojai.types.ODate;
-import org.ojai.types.OTime;
-import org.ojai.types.OTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,12 @@ import java.util.stream.Collectors;
  */
 @Service
 public class MapRDBServiceImpl implements MapRDBService {
+
+    public static final String DOCUMENT_COUNT_METRIC = "Document count";
+    public static final String FIELD_VALUE_METRIC = "Field value";
+    public static final String FIELD_MIN_METRIC = "Field min";
+    public static final String FIELD_MAX_METRIC = "Field max";
+    public static final String FIELD_AVG_METRIC = "Field avg";
 
     // FIXME use @Value
     public static final long CONNECTION_ATTEMPTS = 5;
@@ -138,66 +145,61 @@ public class MapRDBServiceImpl implements MapRDBService {
         log.debug("Querying time series for target: {}", target);
         if (target.getTarget() == null || target.getTarget().isEmpty() ||
                 target.getTimeField() == null || target.getTimeField().isEmpty() ||
-                target.getMetricField() == null || target.getMetricField().isEmpty()) {
+                target.getMetric() == null || target.getMetric().isEmpty()) {
 
-            log.warn("Target name, metric field and time field are required for querying time series. Invalid target: {}",
+            log.warn("Target name, metric and time field are required for querying time series. Invalid target: {}",
                     target);
 
             return Optional.empty();
         }
 
-        Query query = MetricsQueryBuilder.forConnection(connection)
-                .select(target.getTimeField(), target.getMetricField())
+        GrafanaTimeSeries series;
+        if (DOCUMENT_COUNT_METRIC.equals(target.getMetric())) {
+            series = new DocumentCountTimeSeries(target.getTarget(), target.getTimeField(), queryRequest.getIntervalMs());
+        } else if (FIELD_VALUE_METRIC.equals(target.getMetric())) {
+
+            series = new AggregationTimeSeries((existing, incoming) -> existing, target.getTarget(),
+                    target.getTimeField(), target.getMetricField(), queryRequest.getIntervalMs());
+
+        } else if (FIELD_MIN_METRIC.equals(target.getMetric())) {
+
+            series = new AggregationTimeSeries(
+                    (existing, incoming) -> existing.getValue() < incoming.getValue() ? existing : incoming,
+                    target.getTarget(), target.getTimeField(), target.getMetricField(), queryRequest.getIntervalMs());
+
+        } else if (FIELD_MAX_METRIC.equals(target.getMetric())) {
+
+            series = new AggregationTimeSeries(
+                    (existing, incoming) -> existing.getValue() > incoming.getValue() ? existing : incoming,
+                    target.getTarget(), target.getTimeField(), target.getMetricField(), queryRequest.getIntervalMs());
+
+        } else if (FIELD_AVG_METRIC.equals(target.getMetric())) {
+
+            series = new FieldAverageTimeSeries(target.getTarget(), target.getTimeField(), target.getMetricField(),
+                    queryRequest.getIntervalMs());
+
+        } else {
+            log.warn("Specified metric '{}' is not supported.", target.getMetric());
+            return Optional.empty();
+        }
+
+        MetricsQueryBuilder queryBuilder = MetricsQueryBuilder.forConnection(connection)
+                .select(target.getTimeField())
                 .withJsonConditon(target.getCondition())
                 .withTimeRange(target.getTimeField(), queryRequest.getRange())
                 .withLimit(target.getLimit(), DEFAULT_RAW_DOCUMENT_LIMIT, MAX_RAW_DOCUMENT_LIMIT)
-                .orderBy(target.getTimeField())
-                .constructQuery();
+                .orderBy(target.getTimeField());
 
-        DocumentStream documentStream = connection.getStore(target.getTable()).findQuery(query.build());
+        if (target.getMetricField() != null && !target.getMetricField().isEmpty()) {
+            queryBuilder.select(target.getMetricField());
+        }
 
-        GrafanaTimeSeries timeSeries = new GrafanaTimeSeries(target.getTarget());
+        DocumentStream documentStream = connection.getStore(target.getTable()).findQuery(queryBuilder.constructQuery().build());
         for (Document document : documentStream) {
-            documentToDatapoint(document, target.getMetricField(), target.getTimeField()).ifPresent(timeSeries::addDatapoint);
+            series.addDocument(document);
         }
 
-        return Optional.of(timeSeries);
-    }
-
-    private Optional<GrafanaTimeSeries.Datapoint> documentToDatapoint(Document document, String metricField, String timeField) {
-
-        try {
-            double value = document.getValue(metricField).getDouble();
-            Object dateObject = document.getValue(timeField).getObject();
-
-            if (dateObject == null) {
-                throw new IllegalArgumentException("Time field can not contain null values.");
-            }
-
-            Long timestamp;
-            if (dateObject instanceof ODate) {
-                timestamp = ((ODate) dateObject).toDate().getTime();
-            } else if (dateObject instanceof OTime) {
-                timestamp = ((OTime) dateObject).toDate().getTime();
-            } else if (dateObject instanceof OTimestamp) {
-                timestamp = ((OTimestamp) dateObject).toDate().getTime();
-            } else if (dateObject instanceof String) { // TODO add support of time patterns
-                timestamp = Long.valueOf((String) dateObject);
-            } else {
-                timestamp = (Long) dateObject;
-            }
-
-            if (timestamp == null) {
-                throw new IllegalArgumentException("Can not parse '" + dateObject + "' object as timestamp value.");
-            }
-
-            return Optional.of(new GrafanaTimeSeries.Datapoint(value, timestamp));
-        } catch (Exception e) {
-            log.debug("Exception occurred while converting OJAI document '{}' to datapoint with metric field: '{}' " +
-                    "and time field: '{}'. Exception: '{}'", document, metricField, timeField, e);
-        }
-
-        return Optional.empty();
+        return Optional.of(series);
     }
 
     @PreDestroy
