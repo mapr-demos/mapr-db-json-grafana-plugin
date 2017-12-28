@@ -10,6 +10,7 @@ export class MapRDBJSONTableDatasourceQueryCtrl extends QueryCtrl {
     this.scope = $scope;
     // this.target.target = this.target.target || 'select metric';
     this.target.type = this.target.type || 'Raw Document';
+    this.target.metric = this.target.metric || 'Document count';
     this.target.limit = this.target.limit || 500;
 
     this.tableUpdated();
