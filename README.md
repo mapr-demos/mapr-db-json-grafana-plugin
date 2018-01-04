@@ -29,12 +29,15 @@ sudo yum localinstall grafana-4.4.2-1.x86_64.rpm
 
 ```
 $ git clone https://github.com/mapr-demos/mapr-db-json-grafana-plugin.git
+
 ```
 
 2. Build the plugin:
 
 ```
 $ cd mapr-db-json-grafana-plugin
+
+$ git checkout devel
 
 $ mvn clean package
 ```
