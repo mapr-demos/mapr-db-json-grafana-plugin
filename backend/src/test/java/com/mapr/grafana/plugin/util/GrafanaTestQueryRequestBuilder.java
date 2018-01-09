@@ -161,7 +161,7 @@ public class GrafanaTestQueryRequestBuilder {
     }
 
     public TargetBuilder withTimeSeriesTarget() {
-        return new TargetBuilder(GrafanaQueryTarget.RAW_DOCUMENT_TYPE);
+        return new TargetBuilder(GrafanaQueryTarget.TIME_SERIES_TYPE);
     }
 
     public GrafanaQueryRequest build() {

@@ -5,6 +5,7 @@ import com.mapr.db.exceptions.DBException;
 import com.mapr.grafana.plugin.Application;
 import com.mapr.grafana.plugin.dao.TweetDao;
 import com.mapr.grafana.plugin.model.GrafanaQueryRequest;
+import com.mapr.grafana.plugin.model.GrafanaQueryTarget;
 import com.mapr.grafana.plugin.model.Tweet;
 import com.mapr.grafana.plugin.util.GrafanaTestQueryRequestBuilder;
 import org.junit.After;
@@ -27,10 +28,8 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.mapr.grafana.plugin.util.TweetBuilder.tweet;
@@ -48,12 +47,23 @@ public class QueryControllerIntegrationTest {
 
     private static final Logger log = LoggerFactory.getLogger(QueryControllerIntegrationTest.class);
 
+    private static final long SECOND = 1000L;
+    private static final long MINUTE = 60 * SECOND;
+    private static final long HOUR = 60 * MINUTE;
+    private static final long DAY = 24 * HOUR;
+    private static final long INACCURATE_YEAR = 365 * DAY;
+
     private static final Tweet[] TIME_ORDERED_TWEETS = new Tweet[]{
-            tweet().author("user1").content("some content1").time("2012-04-24T22:35:28.981Z").likes(1).build(),
-            tweet().author("user2").content("some content2").time("2013-05-24T22:35:28.981Z").likes(3).build(),
-            tweet().author("user3").content("some content3").time("2014-01-01T22:35:28.981Z").likes(12).build(),
-            tweet().author("usertobequeried").content("some content4").time("2017-01-03T22:35:28.981Z").likes(2).build(),
-            tweet().author("user5").content("some content5").time("2018-01-03T22:35:28.981Z").likes(2).build()
+            tweet().author("user1").content("tag1").time("2012-04-24T22:35:28.981Z").likes(1).build(),
+            tweet().author("user2").content("tag2").time("2013-05-24T22:35:28.981Z").likes(2).build(),
+            tweet().author("user3").content("tag1").time("2014-01-01T22:35:28.981Z").likes(3).build(),
+            tweet().author("usertobequeried").content("tag1").time("2017-01-03T22:35:28.981Z").likes(4).build(),
+
+            // Tweets published in a single day
+            tweet().author("user5").content("tag3").time("2018-04-05T22:35:28.981Z").likes(5).build(),
+            tweet().author("user6").content("tag3").time("2018-04-05T22:36:28.981Z").likes(6).build(),
+            tweet().author("user7").content("tag3").time("2018-04-05T23:02:28.981Z").likes(7).build(),
+            tweet().author("user8").content("tag3").time("2018-04-06T00:35:28.981Z").likes(8).build()
     };
 
     private MediaType contentType = new MediaType(APPLICATION_JSON.getType(), APPLICATION_JSON.getSubtype(),
@@ -257,6 +267,204 @@ public class QueryControllerIntegrationTest {
                 .andExpect(jsonPath("$[0].datapoints[0].content").doesNotExist()) // must not present
                 .andExpect(jsonPath("$[0].datapoints[0].likes").doesNotExist()) // must not present
                 .andExpect(jsonPath("$[0].datapoints[0].time").doesNotExist()); // must not present
+    }
+
+    @Test
+    public void shouldGetNumberOfTweetsByDay() throws Exception {
+
+        GrafanaQueryRequest request = new GrafanaTestQueryRequestBuilder()
+                .withIntervalMs(DAY)
+                .withTimeSeriesTarget()
+                .withTarget("TweetsByTime")
+                .withTable(testTablePath)
+                .withTimeField("time")
+                .withMetric(GrafanaQueryTarget.DOCUMENT_COUNT_METRIC)
+                .addTarget()
+                .build();
+
+        mockMvc.perform(post("/query")
+                .content(json(request))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(contentType))
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].target", is("TweetsByTime")))
+                .andExpect(jsonPath("$[0].datapoints", hasSize(5)));
+    }
+
+    @Test
+    public void shouldGetNumberOfTweetsByDayForTag() throws Exception {
+
+        GrafanaQueryRequest request = new GrafanaTestQueryRequestBuilder()
+                .withIntervalMs(DAY)
+                .withTimeSeriesTarget()
+                .withTarget("TweetsByTime: tag 1")
+                    .withTable(testTablePath)
+                    .withCondition("{\"$condition\": {\"$eq\": {\"content\": \"tag1\"}}}")
+                    .withTimeField("time")
+                    .withMetric(GrafanaQueryTarget.DOCUMENT_COUNT_METRIC)
+                .addTarget()
+                .withTimeSeriesTarget()
+                .withTarget("TweetsByTime: tag 2")
+                    .withTable(testTablePath)
+                    .withCondition("{\"$condition\": {\"$eq\": {\"content\": \"tag2\"}}}")
+                    .withTimeField("time")
+                    .withMetric(GrafanaQueryTarget.DOCUMENT_COUNT_METRIC)
+                .addTarget()
+                .withTimeSeriesTarget()
+                .withTarget("TweetsByTime: tag 3")
+                    .withTable(testTablePath)
+                    .withCondition("{\"$condition\": {\"$eq\": {\"content\": \"tag3\"}}}")
+                    .withTimeField("time")
+                    .withMetric(GrafanaQueryTarget.DOCUMENT_COUNT_METRIC)
+                .addTarget()
+                .build();
+
+        Set<String> targets = new HashSet<>();
+        targets.add("TweetsByTime: tag 1");
+        targets.add("TweetsByTime: tag 2");
+        targets.add("TweetsByTime: tag 3");
+
+        mockMvc.perform(post("/query")
+                .content(json(request))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(contentType))
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0].target", isIn(targets)))
+                .andExpect(jsonPath("$[1].target", isIn(targets)))
+                .andExpect(jsonPath("$[2].target", isIn(targets)))
+                .andExpect(jsonPath("$[0].datapoints", hasSize(isIn(Arrays.asList(1, 3)))))
+                .andExpect(jsonPath("$[1].datapoints", hasSize(isIn(Arrays.asList(1, 3)))))
+                .andExpect(jsonPath("$[2].datapoints", hasSize(isIn(Arrays.asList(1, 3)))));
+    }
+
+    @Test
+    public void shouldGetNumberOfTweetsLikesByDay() throws Exception {
+
+        GrafanaQueryRequest request = new GrafanaTestQueryRequestBuilder()
+                .withIntervalMs(DAY)
+                .withTimeSeriesTarget()
+                .withTarget("TweetsLikesByTime")
+                .withTable(testTablePath)
+                .withTimeField("time")
+                .withMetricField("likes")
+                .withMetric(GrafanaQueryTarget.FIELD_VALUE_METRIC)
+                .addTarget()
+                .build();
+
+        Set<Double> validLikeNums = Stream.of(TIME_ORDERED_TWEETS)
+                .map(Tweet::getLikes)
+                .map(Double::valueOf)
+                .collect(Collectors.toSet());
+
+        mockMvc.perform(post("/query")
+                .content(json(request))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(contentType))
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].target", is("TweetsLikesByTime")))
+                .andExpect(jsonPath("$[0].datapoints", hasSize(5)))
+                .andExpect(jsonPath("$[0].datapoints[0][0]", isIn(validLikeNums)))
+                .andExpect(jsonPath("$[0].datapoints[1][0]", isIn(validLikeNums)))
+                .andExpect(jsonPath("$[0].datapoints[2][0]", isIn(validLikeNums)))
+                .andExpect(jsonPath("$[0].datapoints[3][0]", isIn(validLikeNums)))
+                .andExpect(jsonPath("$[0].datapoints[4][0]", isIn(validLikeNums)));
+    }
+
+    @Test
+    public void shouldReturnMaxFieldValue() throws Exception {
+
+        GrafanaQueryRequest request = new GrafanaTestQueryRequestBuilder()
+                .withIntervalMs(1000 * INACCURATE_YEAR) // make sure all tweets will be in range
+                .withTimeSeriesTarget()
+                .withTarget("MaxLikesValueOfAllTweets")
+                .withTable(testTablePath)
+                .withTimeField("time")
+                .withMetricField("likes")
+                .withMetric(GrafanaQueryTarget.FIELD_MAX_METRIC)
+                .addTarget()
+                .build();
+
+        double max = Stream.of(TIME_ORDERED_TWEETS)
+                .mapToDouble(Tweet::getLikes)
+                .max()
+                .getAsDouble();
+
+        mockMvc.perform(post("/query")
+                .content(json(request))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(contentType))
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].target", is("MaxLikesValueOfAllTweets")))
+                .andExpect(jsonPath("$[0].datapoints", hasSize(1)))
+                .andExpect(jsonPath("$[0].datapoints[0][0]", is(max)));
+    }
+
+    @Test
+    public void shouldReturnMinFieldValue() throws Exception {
+
+        GrafanaQueryRequest request = new GrafanaTestQueryRequestBuilder()
+                .withIntervalMs(1000 * INACCURATE_YEAR) // make sure all tweets will be in range
+                .withTimeSeriesTarget()
+                .withTarget("MinLikesValueOfAllTweets")
+                .withTable(testTablePath)
+                .withTimeField("time")
+                .withMetricField("likes")
+                .withMetric(GrafanaQueryTarget.FIELD_MIN_METRIC)
+                .addTarget()
+                .build();
+
+        double min = Stream.of(TIME_ORDERED_TWEETS)
+                .mapToDouble(Tweet::getLikes)
+                .min()
+                .getAsDouble();
+
+        mockMvc.perform(post("/query")
+                .content(json(request))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(contentType))
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].target", is("MinLikesValueOfAllTweets")))
+                .andExpect(jsonPath("$[0].datapoints", hasSize(1)))
+                .andExpect(jsonPath("$[0].datapoints[0][0]", is(min)));
+    }
+
+    @Test
+    public void shouldReturnAverageFieldValue() throws Exception {
+
+        GrafanaQueryRequest request = new GrafanaTestQueryRequestBuilder()
+                .withIntervalMs(1000 * INACCURATE_YEAR) // make sure all tweets will be in range
+                .withTimeSeriesTarget()
+                .withTarget("AvgLikesValueOfAllTweets")
+                .withTable(testTablePath)
+                .withTimeField("time")
+                .withMetricField("likes")
+                .withMetric(GrafanaQueryTarget.FIELD_AVG_METRIC)
+                .addTarget()
+                .build();
+
+        double average = Stream.of(TIME_ORDERED_TWEETS)
+                .mapToDouble(Tweet::getLikes)
+                .average()
+                .getAsDouble();
+
+        mockMvc.perform(post("/query")
+                .content(json(request))
+                .contentType(contentType))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(contentType))
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].target", is("AvgLikesValueOfAllTweets")))
+                .andExpect(jsonPath("$[0].datapoints", hasSize(1)))
+                .andExpect(jsonPath("$[0].datapoints[0][0]", is(average)));
+    }
+
+    private boolean withinSingleDay(Date first, Date second) {
+        return Math.abs(first.getTime() - second.getTime()) <= DAY;
     }
 
     private Date addDays(Date date, int daysToAdd) {

@@ -11,6 +11,12 @@ import java.util.Set;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GrafanaQueryTarget {
 
+    public static final String DOCUMENT_COUNT_METRIC = "Document count";
+    public static final String FIELD_VALUE_METRIC = "Field value";
+    public static final String FIELD_MIN_METRIC = "Field min";
+    public static final String FIELD_MAX_METRIC = "Field max";
+    public static final String FIELD_AVG_METRIC = "Field avg";
+
     public static final String RAW_DOCUMENT_TYPE = "Raw Document";
     public static final String TIME_SERIES_TYPE = "Timeseries";
 

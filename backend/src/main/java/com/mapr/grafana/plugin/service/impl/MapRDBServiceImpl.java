@@ -23,18 +23,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.mapr.grafana.plugin.model.GrafanaQueryTarget.*;
+
 /**
  * MapR DB Service wich is responsible of performing all Datasource logic, such as checking connection status, querying
  * metrics.
  */
 @Service
 public class MapRDBServiceImpl implements MapRDBService {
-
-    public static final String DOCUMENT_COUNT_METRIC = "Document count";
-    public static final String FIELD_VALUE_METRIC = "Field value";
-    public static final String FIELD_MIN_METRIC = "Field min";
-    public static final String FIELD_MAX_METRIC = "Field max";
-    public static final String FIELD_AVG_METRIC = "Field avg";
 
     // FIXME use @Value
     public static final long CONNECTION_ATTEMPTS = 5;
