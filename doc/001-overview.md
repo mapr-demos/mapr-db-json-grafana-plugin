@@ -1,9 +1,16 @@
-# MapR-DB JSON Grafana Plugin
+# MapR-DB JSON Grafana Plugin Overview
+
+## Contents
+
+* [Plugin Overview](#plugin-overview)
+* [Plugin documentation links](#plugin-documentation-links)
+
+## Plugin Overview
 
 Grafana along with MapR-DB JSON Grafana Plugin allows is intended to visualize arbitrary data stored at MapR-DB JSON 
 tables. 
 
-![](doc/images/plugin-overview.png?raw=true "Plugin overview")
+![](images/plugin-overview.png?raw=true "Plugin overview")
 
 It allows users to:
 * create Graph and Table panels 
@@ -14,7 +21,7 @@ It allows users to:
 
 ## Plugin documentation links
 
-* [MapR-DB JSON Grafana Plugin Overview](doc/001-overview.md)
-* [Installation](doc/002-installation.md)
-* [Raw Documents metrics support](doc/003-raw-documents-support.md)
-* [Time series metrics support](doc/004-time-series-support.md)
+* [MapR-DB JSON Grafana Plugin Overview](001-overview.md)
+* [Installation](002-installation.md)
+* [Raw Documents metrics support](003-raw-documents-support.md)
+* [Time series metrics support](004-time-series-support.md)
