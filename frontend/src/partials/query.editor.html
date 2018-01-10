@@ -1,0 +1,55 @@
+<query-editor-row query-ctrl="ctrl" class="generic-datasource-query-row" has-text-edit-mode="true">
+    <div class="gf-form-inline">
+        <div class="gf-form gf-form--grow">
+            <label class="gf-form-label query-keyword width-7">Type</label>
+            <select class="gf-form-input" ng-model="ctrl.target.type"
+                    ng-options="f as f for f in ['Raw Document', 'Timeseries']"></select>
+        </div>
+        <div class="gf-form gf-form--grow">
+            <label class="gf-form-label query-keyword width-7">Table</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.table" spellcheck="false"
+                   placeholder="Table path" ng-change="ctrl.tableUpdated()" ng-blur="ctrl.refresh()">
+        </div>
+        <div class="gf-form gf-form--grow">
+            <label class="gf-form-label query-keyword width-7">Condition</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.condition" spellcheck="false"
+                   ng-change="ctrl.conditionUpdated()"
+                   placeholder="Find query condition" ng-blur="ctrl.refresh()">
+        </div>
+    </div>
+
+    <div class="gf-form-inline">
+
+        <div class="gf-form gf-form--grow" ng-if="ctrl.target.type == 'Timeseries'">
+            <label class="gf-form-label query-keyword width-7">Metric</label>
+            <select class="gf-form-input" ng-model="ctrl.target.metric"
+                    ng-options="f as f for f in ['Document count', 'Field value', 'Field min', 'Field max', 'Field avg']"></select>
+        </div>
+
+        <div class="gf-form gf-form--grow" ng-if="ctrl.target.type == 'Timeseries'">
+            <label class="gf-form-label query-keyword width-9">Target name</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.target" ng-blur="onChange()">
+        </div>
+
+        <div class="gf-form gf-form--grow" ng-if="ctrl.target.type == 'Raw Document'">
+            <label class="gf-form-label query-keyword width-7">Select</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.selectFields" spellcheck="false"
+                   placeholder="Comma-separated list of fields" ng-blur="onChange()">
+        </div>
+        <div class="gf-form gf-form--grow"
+             ng-if="ctrl.target.type == 'Timeseries' && ctrl.target.metric != 'Document count'">
+            <label class="gf-form-label query-keyword width-7">Metric field</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.metricField" ng-blur="onChange()">
+        </div>
+
+        <div class="gf-form gf-form--grow">
+            <label class="gf-form-label query-keyword width-7">Time field</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.timeField" ng-blur="onChange()">
+        </div>
+        <div class="gf-form gf-form--grow">
+            <label class="gf-form-label query-keyword width-7">Limit</label>
+            <input type="number" class="gf-form-input" ng-model="ctrl.target.limit" ng-blur="onChange()">
+        </div>
+    </div>
+
+</query-editor-row>

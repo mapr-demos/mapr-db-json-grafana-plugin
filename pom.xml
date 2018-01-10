@@ -1,0 +1,14 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.mapr.grafana</groupId>
+    <artifactId>mapr-db-json-grafana-plugin</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0-SNAPSHOT</version>
+    <name>mapr-db-json-grafana-plugin</name>
+    <url>https://github.com/mapr-demos/mapr-db-json-grafana-plugin</url>
+    <modules>
+        <module>backend</module>
+        <module>frontend</module>
+    </modules>
+</project>
