@@ -34,7 +34,7 @@ import static com.mapr.grafana.plugin.model.GrafanaQueryTarget.*;
 public class MapRDBServiceImpl implements MapRDBService {
 
     // FIXME use @Value
-    public static final long CONNECTION_ATTEMPTS = 5;
+    public static final long CONNECTION_ATTEMPTS = 1;
     public static final long CONNECTION_RETRY_TIMEOUT_MS = 1000;
 
     public static final long DEFAULT_RAW_DOCUMENT_LIMIT = 500;
@@ -53,7 +53,7 @@ public class MapRDBServiceImpl implements MapRDBService {
     private void tryEstablishOjaiConnection() {
 
         for (int i = 0; i < CONNECTION_ATTEMPTS && this.connection == null; i++) {
-            log.debug("Trying to create OJAI connection. Attempt: '{}'");
+            log.debug("Trying to create OJAI connection. Attempt: '{}'", i);
             try {
                 // Create an OJAI connection to MapR cluster
                 MapRDB.tableExists("/foo"); // Trying to access the cluster to test the connection
@@ -72,6 +72,7 @@ public class MapRDBServiceImpl implements MapRDBService {
     }
 
     private void ensureConnectionEstablished() {
+        this.connection = null;
         tryEstablishOjaiConnection();
         if (this.connection == null) {
             throw new IllegalStateException("OJAI connection can not be established after " +
@@ -81,7 +82,7 @@ public class MapRDBServiceImpl implements MapRDBService {
 
     @Override
     public DatasourceStatus status() {
-        // TODO actually check if the connection alive
+        this.connection = null;
         tryEstablishOjaiConnection();
         log.debug("MapR-DB JSON Datasource status: {}", status);
         return status;
