@@ -1,5 +1,6 @@
 package com.mapr.grafana.plugin.service.impl;
 
+import com.mapr.db.MapRDB;
 import com.mapr.db.exceptions.TableNotFoundException;
 import com.mapr.grafana.plugin.model.*;
 import com.mapr.grafana.plugin.model.timeseries.AggregationTimeSeries;
@@ -55,6 +56,7 @@ public class MapRDBServiceImpl implements MapRDBService {
             log.debug("Trying to create OJAI connection. Attempt: '{}'");
             try {
                 // Create an OJAI connection to MapR cluster
+                MapRDB.tableExists("/foo"); // Trying to access the cluster to test the connection
                 this.connection = DriverManager.getConnection(CONNECTION_URL);
                 this.status = DatasourceStatus.ok();
             } catch (OjaiException e) {
