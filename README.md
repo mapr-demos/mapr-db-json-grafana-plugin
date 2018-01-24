@@ -18,3 +18,4 @@ It allows users to:
 * [Installation](doc/002-installation.md)
 * [Raw Documents metrics support](doc/003-raw-documents-support.md)
 * [Time series metrics support](doc/004-time-series-support.md)
+* [Creating sample dashboard](doc/005-creating-sample-dashboard.md)

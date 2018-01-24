@@ -117,3 +117,4 @@ which contains valid time value. Currently the following time field values are s
 * [Installation](002-installation.md)
 * [Raw Documents metrics support](003-raw-documents-support.md)
 * [Time series metrics support](004-time-series-support.md)
+* [Creating sample dashboard](005-creating-sample-dashboard.md)
