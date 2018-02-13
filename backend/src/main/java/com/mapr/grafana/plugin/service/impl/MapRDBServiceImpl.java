@@ -1,5 +1,9 @@
 package com.mapr.grafana.plugin.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mapr.db.MapRDB;
 import com.mapr.db.exceptions.TableNotFoundException;
 import com.mapr.grafana.plugin.model.*;
@@ -20,6 +24,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PreDestroy;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,6 +50,8 @@ public class MapRDBServiceImpl implements MapRDBService {
     private static final Logger log = LoggerFactory.getLogger(MapRDBServiceImpl.class);
 
     private static final String CONNECTION_URL = "ojai:mapr:";
+    private static final ObjectMapper mapper = new ObjectMapper();
+
     private Connection connection;
     private DatasourceStatus status;
 
@@ -124,9 +133,9 @@ public class MapRDBServiceImpl implements MapRDBService {
 
             DocumentStream documentStream = connection.getStore(target.getTable()).findQuery(query.build());
 
-            GrafanaRawDocuments<Document> rawDocumentsMetric = new GrafanaRawDocuments<>();
+            GrafanaRawDocuments<JsonNode> rawDocumentsMetric = new GrafanaRawDocuments<>();
             for (Document document : documentStream) {
-                rawDocumentsMetric.addDatapoint(document);
+                convertInnerDocsToString(document).ifPresent(rawDocumentsMetric::addDatapoint);
             }
 
             return Optional.of(rawDocumentsMetric);
@@ -134,6 +143,39 @@ public class MapRDBServiceImpl implements MapRDBService {
             log.warn("Table '{}' not found. Can not query documents for target: {}", target.getTable(), target);
         } catch (Exception e) {
             log.warn("Exception occurred while querying raw documents for target: " + target, e);
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<JsonNode> convertInnerDocsToString(Document document) {
+
+        try {
+
+            String jsonStringWithoutTags = document.asJsonString();
+            JsonNode jacksonJson = mapper.readTree(jsonStringWithoutTags);
+
+            Iterator<Map.Entry<String, JsonNode>> fieldsIterator = jacksonJson.fields();
+            ObjectNode copyWithoutInnerDocs = mapper.createObjectNode();
+            while (fieldsIterator.hasNext()) {
+
+                Map.Entry<String, JsonNode> fieldNameValuePair = fieldsIterator.next();
+
+                String fieldName = fieldNameValuePair.getKey();
+                JsonNode fieldValue = fieldNameValuePair.getValue();
+
+                if(fieldValue.isArray() || fieldValue.isObject()) {
+                    copyWithoutInnerDocs.put(fieldName, fieldValue.toString());
+                } else {
+                    copyWithoutInnerDocs.set(fieldName, fieldValue);
+                }
+
+            }
+
+            return Optional.of(copyWithoutInnerDocs);
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         return Optional.empty();
