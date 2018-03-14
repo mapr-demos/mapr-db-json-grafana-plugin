@@ -1,6 +1,8 @@
 package com.mapr.grafana.plugin.model.timeseries;
 
 import org.ojai.Document;
+import org.ojai.FieldPath;
+import org.ojai.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,24 +37,32 @@ public class FieldAverageTimeSeries extends AbstractGrafanaTimeSeries {
                 throw new IllegalArgumentException("Document can not be null");
             }
 
-            double value = document.getValue(metricFieldPath).getDouble();
+            FieldPath path = FieldPath.parseFrom(metricFieldPath);
+            Value value = document.getValue(path);
+
+            Double doubleValue;
+            if (Value.Type.STRING == value.getType()) {
+                doubleValue = Double.valueOf(value.getString());
+            } else {
+                doubleValue = value.getDouble();
+            }
             long timestamp = getDocumentTimestamp(document, timeFieldPath);
 
             // First doc at interval
             if (this.datapoints.isEmpty() || timestamp - datapoints.get(datapoints.size() - 1).getTimestamp() >= intervalMs) {
-                Datapoint datapoint = new Datapoint(value, timestamp);
+                Datapoint datapoint = new Datapoint(doubleValue, timestamp);
                 datapoints.add(datapoint);
 
                 List<Datapoint> datapoints = new ArrayList<>();
                 // add copy of datapoint, so the origin one can be modified safely
-                datapoints.add(new Datapoint(value, timestamp));
+                datapoints.add(new Datapoint(doubleValue, timestamp));
                 intervalDatapoints.put(timestamp, datapoints);
 
             } else if (!this.datapoints.isEmpty()) {
 
                 Datapoint last = datapoints.get(datapoints.size() - 1);
                 List<Datapoint> existingIntervalDps = intervalDatapoints.get(last.getTimestamp());
-                existingIntervalDps.add(new Datapoint(value, timestamp));
+                existingIntervalDps.add(new Datapoint(doubleValue, timestamp));
 
                 OptionalDouble average = existingIntervalDps.stream().mapToDouble(Datapoint::getValue).average();
                 average.ifPresent(last::setValue);

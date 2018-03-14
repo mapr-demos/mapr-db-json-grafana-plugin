@@ -1,6 +1,8 @@
 package com.mapr.grafana.plugin.model.timeseries;
 
 import org.ojai.Document;
+import org.ojai.FieldPath;
+import org.ojai.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,9 +46,18 @@ public class AggregationTimeSeries extends AbstractGrafanaTimeSeries {
                 throw new IllegalArgumentException("Document can not be null");
             }
 
-            double value = document.getValue(metricFieldPath).getDouble();
+            FieldPath path = FieldPath.parseFrom(metricFieldPath);
+            Value value = document.getValue(path);
+
+            Double doubleValue;
+            if (Value.Type.STRING == value.getType()) {
+                doubleValue = Double.valueOf(value.getString());
+            } else {
+                doubleValue = value.getDouble();
+            }
+
             long timestamp = getDocumentTimestamp(document, timeFieldPath);
-            Datapoint datapoint = new Datapoint(value, timestamp);
+            Datapoint datapoint = new Datapoint(doubleValue, timestamp);
 
             if (this.datapoints.isEmpty()) {
                 this.datapoints.add(datapoint);

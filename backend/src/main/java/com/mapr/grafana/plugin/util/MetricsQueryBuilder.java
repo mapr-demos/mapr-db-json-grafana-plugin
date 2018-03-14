@@ -2,6 +2,7 @@ package com.mapr.grafana.plugin.util;
 
 import com.mapr.db.util.ConditionParser;
 import com.mapr.grafana.plugin.model.GrafanaQueryRequest;
+import org.ojai.FieldPath;
 import org.ojai.exceptions.DecodingException;
 import org.ojai.store.Connection;
 import org.ojai.store.Query;
@@ -145,12 +146,37 @@ public final class MetricsQueryBuilder {
             condition = Optional.empty();
         }
 
-        Query query = (condition.isPresent())
-                ? this.connection.newQuery().where(condition.get())
-                : this.connection.newQuery();
-
+        Query query = this.connection.newQuery();
+        QueryCondition selectedFieldsExist = null;
         if (this.selectFields != null && !this.selectFields.isEmpty()) {
-            query.select(this.selectFields.toArray(new String[this.selectFields.size()]));
+
+            selectedFieldsExist = connection.newCondition()
+                    .and();
+            for(String fieldPath : this.selectFields) {
+
+                selectedFieldsExist = selectedFieldsExist.exists(FieldPath.parseFrom(fieldPath));
+            }
+            selectedFieldsExist.close().build();
+
+            FieldPath[] toSelect = this.selectFields.stream().map(FieldPath::parseFrom).toArray(FieldPath[]::new);
+            query.select(toSelect);
+        }
+
+        if(selectedFieldsExist != null && condition.isPresent()) {
+
+            QueryCondition combined = connection.newCondition()
+                    .and()
+                    .condition(condition.get())
+                    .condition(selectedFieldsExist)
+                    .close()
+                    .build();
+
+            query.where(combined);
+
+        } else if(condition.isPresent()) {
+            query.where(condition.get());
+        } else if(selectedFieldsExist != null) {
+            query.where(selectedFieldsExist);
         }
 
         if (this.limit != null) {
