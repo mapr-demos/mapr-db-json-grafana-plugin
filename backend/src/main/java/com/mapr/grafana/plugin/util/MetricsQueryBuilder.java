@@ -203,6 +203,9 @@ public final class MetricsQueryBuilder {
                 .condition(
                         rangeODateCondition(connection, fieldPath, range).build()
                 )
+                .condition(
+                        rangeUnixTimestampCondition(connection, fieldPath, range).build()
+                )
                 .close();
     }
 
@@ -224,6 +227,12 @@ public final class MetricsQueryBuilder {
         return rangeOjaiCondition(connection, from, to);
     }
 
+    private QueryCondition rangeUnixTimestampCondition(Connection connection, String fieldPath, GrafanaQueryRequest.Range range) {
+        QueryCondition from = unixTimestampCondition(connection, fieldPath, GREATER_OR_EQUAL, range.getFrom());
+        QueryCondition to = unixTimestampCondition(connection, fieldPath, LESS_OR_EQUAL, range.getTo());
+        return rangeOjaiCondition(connection, from, to);
+    }
+
     private QueryCondition rangeOjaiCondition(Connection connection, QueryCondition from, QueryCondition to) {
         return connection.newCondition()
                 .and()
@@ -242,6 +251,10 @@ public final class MetricsQueryBuilder {
 
     private QueryCondition timestampCondition(Connection connection, String field, QueryCondition.Op op, Date date) {
         return connection.newCondition().is(field, op, new OTimestamp(date.getTime()));
+    }
+
+    private QueryCondition unixTimestampCondition(Connection connection, String field, QueryCondition.Op op, Date date) {
+        return connection.newCondition().is(field, op, date.getTime());
     }
 
     private QueryCondition dateCondition(Connection connection, String field, QueryCondition.Op op, Date date) {
