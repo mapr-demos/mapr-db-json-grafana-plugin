@@ -52,13 +52,13 @@ $ mvn clean package
 
 3. Install the plugin:
 
-Copy the content of ` ` direcotory to Grafana dataource plugins direcory and restart the Grafana.
+Copy the content of `frontend/dist/` direcotory to Grafana dataource plugins direcory and restart the Grafana.
 
 For dev machine installation:
 ```
 $ sudo mkdir /usr/share/grafana/public/app/plugins/datasource/mapr-db-json-grafana-plugin
 
-$ sudo cp -R frontend/dist/ /usr/share/grafana/public/app/plugins/datasource/mapr-db-json-grafana-plugin
+$ sudo cp -R frontend/dist/* /usr/share/grafana/public/app/plugins/datasource/mapr-db-json-grafana-plugin
 
 $ sudo service grafana-server restart
 ```
@@ -67,7 +67,7 @@ For node installation:
 ```
 $ mkdir /opt/mapr/grafana/grafana-4.4.2/usr/share/grafana/public/app/plugins/datasource/mapr-db-json-grafana-plugin
 
-$ sudo cp -R frontend/dist/ /opt/mapr/grafana/grafana-4.4.2/usr/share/grafana/public/app/plugins/datasource/mapr-db-json-grafana-plugin
+$ sudo cp -R frontend/dist/* /opt/mapr/grafana/grafana-4.4.2/usr/share/grafana/public/app/plugins/datasource/mapr-db-json-grafana-plugin
 
 $ maprcli node services -action restart -nodes `hostname` -name grafana
 
