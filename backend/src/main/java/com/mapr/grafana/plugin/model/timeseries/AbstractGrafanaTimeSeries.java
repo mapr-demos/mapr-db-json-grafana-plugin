@@ -86,8 +86,10 @@ public abstract class AbstractGrafanaTimeSeries implements GrafanaTimeSeries {
             return ((OTime) dateObject).toDate().getTime();
         } else if (dateObject instanceof OTimestamp) {
             return ((OTimestamp) dateObject).toDate().getTime();
-        } else if (dateObject instanceof String) { // TODO add support of time patterns
+        } else if (dateObject instanceof String) {
             return Long.valueOf((String) dateObject);
+        } else if (dateObject instanceof Double) { // TODO add support of time patterns
+            return ((Double) dateObject).longValue();
         } else {
             return (Long) dateObject;
         }
